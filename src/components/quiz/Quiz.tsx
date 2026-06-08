@@ -400,12 +400,6 @@ const Quiz = () => {
 
     setIsSubmittingLead(true);
 
-    try {
-      fbq("track", "Lead");
-    } catch (_) {
-      // pixel pode não estar carregado
-    }
-
     if (!webhookSent) {
       await sendWebhookLead(answers);
     }
@@ -795,6 +789,9 @@ const Quiz = () => {
                 setIsLoadingLead(true);
                 await sendWebhookLead(answers);
                 setWebhookSent(true);
+                try {
+                  fbq("track", "Lead");
+                } catch (_) {}
                 setIsLoadingLead(false);
                 next();
               }}
