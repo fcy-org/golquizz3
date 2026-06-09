@@ -32,6 +32,7 @@ type Answers = {
   nomeUsuario: string;
   nomeCompleto: string;
   telefone: string;
+  documento: string;
 };
 
 
@@ -78,9 +79,45 @@ function getTrackingParams() {
   };
 }
 
+function validarCPF(cpf: string): boolean {
+  const d = cpf.replace(/\D/g, "");
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  const calc = (len: number) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += parseInt(d[i]) * (len + 1 - i);
+    const r = (sum * 10) % 11;
+    return r >= 10 ? 0 : r;
+  };
+  return calc(9) === parseInt(d[9]) && calc(10) === parseInt(d[10]);
+}
+
+function validarCNPJ(cnpj: string): boolean {
+  const d = cnpj.replace(/\D/g, "");
+  if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
+  const calc = (len: number) => {
+    let sum = 0;
+    let w = len - 7;
+    for (let i = 0; i < len; i++) {
+      sum += parseInt(d[i]) * w--;
+      if (w < 2) w = 9;
+    }
+    const r = sum % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
+}
+
+function validarDocumento(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 11) return validarCPF(value);
+  if (digits.length === 14) return validarCNPJ(value);
+  return false;
+}
+
 async function sendWebhookLead(answers: Answers) {
   const leadName = answers.nomeCompleto || answers.nomeUsuario || "Lead";
   const normalizedPhone = answers.telefone.replace(/\D/g, "");
+  const normalizedDoc = answers.documento.replace(/\D/g, "");
   const fbclid = getFbclid();
   const tracking = getTrackingParams();
 
@@ -93,6 +130,7 @@ async function sendWebhookLead(answers: Answers) {
         name: leadName,
         city: answers.cidade,
         state: answers.estado,
+        document: normalizedDoc || undefined,
         pipeline_stage: "Diagnóstico Quiz Gol",
         notes: [
           `Tipo de loja: ${answers.tipoLoja || "Não informado"}`,
@@ -100,6 +138,7 @@ async function sendWebhookLead(answers: Answers) {
           `Produto parado no estoque: ${answers.estoqueParado || "Não informado"}`,
           `Área que quer melhorar: ${answers.areaMelhorar || "Não informado"}`,
           `Categorias trabalhadas: ${answers.produtos.length > 0 ? answers.produtos.join(", ") : "Não informado"}`,
+          answers.documento ? `CPF/CNPJ: ${answers.documento}` : "",
           fbclid ? `Fbclid: ${fbclid}` : "",
         ].filter(Boolean).join("\n"),
         fbclid,
@@ -258,6 +297,7 @@ const Quiz = () => {
     nomeUsuario: "",
     nomeCompleto: "",
     telefone: "",
+    documento: "",
   });
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [isLoadingLead, setIsLoadingLead] = useState(false);
@@ -695,6 +735,12 @@ const Quiz = () => {
                 placeholder="WhatsApp (00) 00000-0000"
                 mask="phone"
               />
+              <QuizInput
+                value={answers.documento}
+                onChange={(v) => setAnswer("documento", v)}
+                placeholder="CPF ou CNPJ"
+                mask="cpfCnpj"
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select
                   value={answers.estado}
@@ -739,6 +785,7 @@ const Quiz = () => {
               disabled={
                 !answers.nomeCompleto.trim() ||
                 answers.telefone.length < 14 ||
+                !validarDocumento(answers.documento) ||
                 !answers.estado ||
                 !answers.cidade.trim()
               }
