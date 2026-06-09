@@ -6,7 +6,7 @@ import OptionButton from "./OptionButton";
 import QuizButton from "./QuizButton";
 import QuizInput from "./QuizInput";
 import WaveDecoration from "./WaveDecoration";
-import logo from "../assets/logo-garra.png";
+import logo from "../assets/logo-garra-white.png";
 import { MUNICIPIOS_PIAUI } from "@/data/municipiosPiaui";
 
 declare function fbq(...args: unknown[]): void;
