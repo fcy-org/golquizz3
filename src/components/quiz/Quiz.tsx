@@ -31,6 +31,7 @@ type Answers = {
   cidade: string;
   nomeUsuario: string;
   nomeCompleto: string;
+  email: string;
   telefone: string;
   documento: string;
 };
@@ -128,6 +129,7 @@ async function sendWebhookLead(answers: Answers) {
       body: JSON.stringify({
         phone: normalizedPhone,
         name: leadName,
+        email: answers.email || undefined,
         city: answers.cidade,
         state: answers.estado,
         document: normalizedDoc || undefined,
@@ -296,6 +298,7 @@ const Quiz = () => {
     cidade: "",
     nomeUsuario: "",
     nomeCompleto: "",
+    email: "",
     telefone: "",
     documento: "",
   });
@@ -734,6 +737,11 @@ const Quiz = () => {
                 onChange={(v) => setAnswer("telefone", v)}
                 placeholder="WhatsApp (00) 00000-0000"
                 mask="phone"
+              />
+              <QuizInput
+                value={answers.email}
+                onChange={(v) => setAnswer("email", v)}
+                placeholder="E-mail"
               />
               <QuizInput
                 value={answers.documento}
