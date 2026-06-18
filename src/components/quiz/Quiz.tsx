@@ -412,6 +412,8 @@ const Quiz = () => {
       `Olá! Fiz o diagnóstico no site e gostaria de falar com um consultor.\n\n` +
         `Nome: ${leadName}\n` +
         `Telefone: ${answers.telefone}\n` +
+        `E-mail: ${answers.email}\n` +
+        `CPF/CNPJ: ${answers.documento}\n` +
         `Tipo de loja: ${answers.tipoLoja}\n` +
         `Cidade: ${answers.cidade} / ${answers.estado}\n` +
         `Investimento mensal: ${answers.investimentoMercadoria}\n` +
