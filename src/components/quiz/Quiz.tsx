@@ -6,6 +6,7 @@ import OptionButton from "./OptionButton";
 import QuizButton from "./QuizButton";
 import QuizInput from "./QuizInput";
 import WaveDecoration from "./WaveDecoration";
+import BrandCarousel from "./BrandCarousel";
 import logo from "../assets/logo-gol.webp";
 
 declare function fbq(...args: unknown[]): void;
@@ -80,18 +81,6 @@ function getTrackingParams() {
   };
 }
 
-function validarCPF(cpf: string): boolean {
-  const d = cpf.replace(/\D/g, "");
-  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
-  const calc = (len: number) => {
-    let sum = 0;
-    for (let i = 0; i < len; i++) sum += parseInt(d[i]) * (len + 1 - i);
-    const r = (sum * 10) % 11;
-    return r >= 10 ? 0 : r;
-  };
-  return calc(9) === parseInt(d[9]) && calc(10) === parseInt(d[10]);
-}
-
 function validarCNPJ(cnpj: string): boolean {
   const d = cnpj.replace(/\D/g, "");
   if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
@@ -106,13 +95,6 @@ function validarCNPJ(cnpj: string): boolean {
     return r < 2 ? 0 : 11 - r;
   };
   return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
-}
-
-function validarDocumento(value: string): boolean {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 11) return validarCPF(value);
-  if (digits.length === 14) return validarCNPJ(value);
-  return false;
 }
 
 async function sendWebhookLead(answers: Answers) {
@@ -140,7 +122,7 @@ async function sendWebhookLead(answers: Answers) {
           `Produto parado no estoque: ${answers.estoqueParado || "Não informado"}`,
           `Área que quer melhorar: ${answers.areaMelhorar || "Não informado"}`,
           `Categorias trabalhadas: ${answers.produtos.length > 0 ? answers.produtos.join(", ") : "Não informado"}`,
-          answers.documento ? `CPF/CNPJ: ${answers.documento}` : "",
+          answers.documento ? `CNPJ: ${answers.documento}` : "",
           fbclid ? `Fbclid: ${fbclid}` : "",
         ].filter(Boolean).join("\n"),
         fbclid,
@@ -211,7 +193,7 @@ function getDiagnosisInsights(answers: Answers, name: string): DiagnosisInsight[
     insights.push({
       icon: "⚠️",
       title: "Estoque parado travando margem",
-      text: `${name}, sua ${loja.toLowerCase()} pode estar com capital preso em modelos de baixo giro. Revisar o mix com foco em categorias Olinda de alta aceitação regional ajuda a liberar caixa e abrir espaço para pares que vendem mais rápido.`,
+      text: `${name}, sua ${loja.toLowerCase()} pode estar com capital preso em modelos de baixo giro. Revisar o mix com foco em marcas de alto giro ajuda a liberar caixa e abrir espaço para pares que vendem mais rápido.`,
       highlight: true,
     });
   } else if (answers.estoqueParado === "Um pouco") {
@@ -234,7 +216,7 @@ function getDiagnosisInsights(answers: Answers, name: string): DiagnosisInsight[
   const catMsg: Record<string, { title: string; text: string }> = {
     "Feminino": {
       title: "Feminino: maior volume e fidelização",
-      text: "A categoria feminina concentra o maior volume de vendas em lojas de calçados do Nordeste. Um mix variado da Linha Olinda com boa aceitação regional garante recompra frequente.",
+      text: "A categoria feminina concentra o maior volume de vendas em lojas de calçados do Nordeste. Um mix variado com marcas de alto giro e boa aceitação regional garante recompra frequente.",
     },
     "Masculino": {
       title: "Masculino: conforto que vende sozinho",
@@ -270,7 +252,7 @@ function getDiagnosisInsights(answers: Answers, name: string): DiagnosisInsight[
     },
     "Mix de categorias": {
       title: "Mix mais rentável por metro de prateleira",
-      text: "Um mix equilibrado da Linha Olinda evita excesso de modelos parecidos e fortalece as categorias com maior margem e recompra na sua região.",
+      text: "Um mix equilibrado de marcas de alto giro evita excesso de modelos parecidos e fortalece as categorias com maior margem e recompra na sua região.",
     },
     "Margem de lucro": {
       title: "Mais margem por par vendido",
@@ -413,7 +395,7 @@ const Quiz = () => {
         `Nome: ${leadName}\n` +
         `Telefone: ${answers.telefone}\n` +
         `E-mail: ${answers.email}\n` +
-        `CPF/CNPJ: ${answers.documento}\n` +
+        `CNPJ: ${answers.documento}\n` +
         `Tipo de loja: ${answers.tipoLoja}\n` +
         `Cidade: ${answers.cidade} / ${answers.estado}\n` +
         `Investimento mensal: ${answers.investimentoMercadoria}\n` +
@@ -460,29 +442,33 @@ const Quiz = () => {
     switch (step) {
       case 1:
         return (
-          <div className="flex flex-col items-center text-center gap-6 py-8">
+          <div className="flex flex-col items-center text-center gap-6 py-8 w-full">
             <img src={logo} alt="Gol Distribuidora" className="h-24 w-auto" />
 
-            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight">
-              Sua loja está vendendo ou{" "}
-              <span className="text-primary">lucrando de verdade?</span>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight w-full max-w-md">
+              Sua loja tem o perfil para ser{" "}
+              <span className="text-primary">parceira Gol Distribuidora?</span>
             </h1>
 
-            <p className="text-muted-foreground text-base md:text-lg max-w-md">
-              Descubra em 2 minutos como a Linha Olinda pode aumentar a margem
-              da sua loja sem precisar vender mais pares.
+            <p className="text-muted-foreground text-base md:text-lg w-full max-w-md">
+              Cadastro rápido e simples. Um consultor exclusivo vai te chamar
+              no WhatsApp com o catálogo completo e os valores de atacado das
+              principais marcas.
             </p>
 
-            <p className="text-primary font-semibold text-sm md:text-base max-w-md">
-              Distribuição exclusiva Gol — atendemos PI e MA.
-              Frete grátis nas regiões atendidas.
-            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-primary text-center w-full max-w-md">
+              <span className="rounded-lg bg-primary/10 px-3 py-2">💳 Boleto a prazo</span>
+              <span className="rounded-lg bg-primary/10 px-3 py-2">🚚 Frete grátis acima de R$300</span>
+              <span className="rounded-lg bg-primary/10 px-3 py-2">🏷️ Preço de atacado</span>
+            </div>
 
             <div className="w-full mt-4">
               <QuizButton onClick={next} variant="cta">
-                👉 Fazer diagnóstico gratuito
+                👉 Quero acesso ao catálogo de atacado
               </QuizButton>
             </div>
+
+            <BrandCarousel />
           </div>
         );
 
@@ -748,8 +734,8 @@ const Quiz = () => {
               <QuizInput
                 value={answers.documento}
                 onChange={(v) => setAnswer("documento", v)}
-                placeholder="CPF ou CNPJ"
-                mask="cpfCnpj"
+                placeholder="CNPJ"
+                mask="cnpj"
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select
@@ -770,9 +756,9 @@ const Quiz = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-primary text-center">
-              <span className="rounded-lg bg-primary/10 px-3 py-2">Frete grátis PI/MA</span>
-              <span className="rounded-lg bg-primary/10 px-3 py-2">Distribuição exclusiva</span>
-              <span className="rounded-lg bg-primary/10 px-3 py-2">Mix Linha Olinda</span>
+              <span className="rounded-lg bg-primary/10 px-3 py-2">Boleto a prazo</span>
+              <span className="rounded-lg bg-primary/10 px-3 py-2">Frete grátis acima de R$300</span>
+              <span className="rounded-lg bg-primary/10 px-3 py-2">Mix de Calçados e Sapatos</span>
             </div>
 
             <QuizButton
@@ -793,7 +779,7 @@ const Quiz = () => {
               disabled={
                 !answers.nomeCompleto.trim() ||
                 answers.telefone.length < 14 ||
-                !validarDocumento(answers.documento) ||
+                !validarCNPJ(answers.documento) ||
                 !answers.estado ||
                 !answers.cidade.trim()
               }
