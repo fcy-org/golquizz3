@@ -13,7 +13,7 @@ const banners = [
   { name: "Conforto", image: bannerConforto },
 ];
 
-const AUTOPLAY_MS = 4000;
+const AUTOPLAY_MS = 3000;
 
 interface BannerCarouselProps {
   variant?: "card" | "strip";
