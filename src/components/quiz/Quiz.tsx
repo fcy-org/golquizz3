@@ -447,7 +447,6 @@ const Quiz = () => {
               "Possuo CNPJ ativo",
               "Sou MEI com atividade comercial",
               "Meu CNPJ está em processo de regularização",
-              "Ainda não possuo CNPJ",
             ].map((opt) => (
               <OptionButton
                 key={opt}
