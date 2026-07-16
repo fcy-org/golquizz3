@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import azaleia from "../assets/brands/azaleia.png";
 import beiraRio from "../assets/brands/beira-rio.png";
 import actvitta from "../assets/brands/actvitta.png";
-import brsport from "../assets/brands/brsport.png";
+import brsport from "../assets/brands/brsport.jpg";
 import cartago from "../assets/brands/cartago.png";
 import dalponte from "../assets/brands/dalponte.png";
 import danper from "../assets/brands/danper.png";
@@ -24,7 +24,7 @@ const brands = [
   { name: "Azaleia", logo: azaleia },
   { name: "Beira Rio", logo: beiraRio, dark: true },
   { name: "Actvitta", logo: actvitta, dark: true },
-  { name: "BR Sport", logo: brsport, dark: true },
+  { name: "BR Sport", logo: brsport },
   { name: "Cartago", logo: cartago },
   { name: "Dal Ponte", logo: dalponte },
   { name: "Danper", logo: danper },
@@ -42,8 +42,55 @@ const brands = [
   { name: "Vizzano", logo: vizzano },
 ];
 
-const BrandCarousel = () => {
-  const loop = [...brands, ...brands];
+const BrandRow = ({
+  items,
+  direction,
+  duration,
+}: {
+  items: typeof brands;
+  direction: "rtl" | "ltr";
+  duration: number;
+}) => {
+  const loop = [...items, ...items];
+
+  return (
+    <div
+      className="relative w-full overflow-hidden"
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+      }}
+    >
+      <motion.div
+        className="flex items-center gap-3 w-max"
+        animate={{ x: direction === "rtl" ? ["0%", "-50%"] : ["-50%", "0%"] }}
+        transition={{ duration, ease: "linear", repeat: Infinity }}
+      >
+        {loop.map((brand, i) => (
+          <div
+            key={`${brand.name}-${i}`}
+            className={`flex items-center justify-center h-12 w-24 shrink-0 rounded-lg border p-2 ${
+              brand.dark
+                ? "bg-slate-800 border-slate-800"
+                : "bg-white border-border"
+            }`}
+          >
+            <img
+              src={brand.logo}
+              alt={brand.name}
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
+const BrandCarousel = ({ rows = 1 }: { rows?: 1 | 2 }) => {
+  const reversedBrands = [...brands].reverse();
 
   return (
     <div className="w-full max-w-lg overflow-hidden">
@@ -51,37 +98,11 @@ const BrandCarousel = () => {
         Marcas de alto giro no nosso catálogo
       </p>
 
-      <div
-        className="relative w-full overflow-hidden"
-        style={{
-          maskImage:
-            "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-        }}
-      >
-        <motion.div
-          className="flex items-center gap-3 w-max"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 22, ease: "linear", repeat: Infinity }}
-        >
-          {loop.map((brand, i) => (
-            <div
-              key={`${brand.name}-${i}`}
-              className={`flex items-center justify-center h-12 w-24 shrink-0 rounded-lg border p-2 ${
-                brand.dark
-                  ? "bg-slate-800 border-slate-800"
-                  : "bg-white border-border"
-              }`}
-            >
-              <img
-                src={brand.logo}
-                alt={brand.name}
-                className="max-h-full max-w-full object-contain"
-              />
-            </div>
-          ))}
-        </motion.div>
+      <div className="flex flex-col gap-3">
+        <BrandRow items={brands} direction="rtl" duration={22} />
+        {rows === 2 && (
+          <BrandRow items={reversedBrands} direction="ltr" duration={26} />
+        )}
       </div>
     </div>
   );

@@ -1,17 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
+import { ShoppingBag, Sparkles, Truck, CreditCard, Tag } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import OptionButton from "./OptionButton";
 import QuizButton from "./QuizButton";
 import QuizInput from "./QuizInput";
 import WaveDecoration from "./WaveDecoration";
 import BrandCarousel from "./BrandCarousel";
+import BannerCarousel from "./BannerCarousel";
 import logo from "../assets/logo-gol.webp";
 
 declare function fbq(...args: unknown[]): void;
 
-const TOTAL_STEPS = 9;
+const TOTAL_STEPS = 10;
+const VIDEO_ID = "5MnWu0N5LRk";
 const WEBHOOK_URL = "/api/webhooks/leads/cmq0tkyiw0003dnk3jtdpcj6i";
 const WHATSAPP_NUMBER = "5586999840542";
 
@@ -264,6 +266,29 @@ function getDiagnosisInsights(answers: Answers, name: string): DiagnosisInsight[
     insights.push({ icon: "💰", ...areaMsg[answers.areaMelhorar] });
   }
 
+  const investMsg: Record<string, { title: string; text: string }> = {
+    "Até R$1.000": {
+      title: "Primeiro pedido: comece pelo mix de alto giro",
+      text: `${name}, com um investimento inicial menor, o segredo é concentrar a compra em categorias de giro comprovado antes de diversificar — isso reduz o risco de capital parado logo no início.`,
+    },
+    "R$1.000 – R$5.000": {
+      title: "Espaço para negociar melhores condições",
+      text: `${name}, nesse volume de compra mensal já dá para negociar condições diferenciadas de atacado e testar mais de uma categoria sem comprometer o caixa.`,
+    },
+    "R$5.000 – R$15.000": {
+      title: "Volume que justifica distribuição direta",
+      text: `${name}, com esse volume mensal, comprar direto do distribuidor (sem intermediários) tende a aumentar sua margem de forma significativa em relação a fornecedores menores.`,
+    },
+    "Acima de R$15.000": {
+      title: "Perfil para condições exclusivas de atacado",
+      text: `${name}, com esse volume, sua loja se qualifica para condições comerciais exclusivas e prioridade de atendimento — o ideal é alinhar isso direto com um consultor.`,
+    },
+  };
+
+  if (answers.investimentoMercadoria && investMsg[answers.investimentoMercadoria]) {
+    insights.push({ icon: "📊", ...investMsg[answers.investimentoMercadoria] });
+  }
+
   return insights;
 }
 
@@ -288,9 +313,6 @@ const Quiz = () => {
   const [isLoadingLead, setIsLoadingLead] = useState(false);
   const [webhookSent, setWebhookSent] = useState(false);
   const [diagnosisProgress, setDiagnosisProgress] = useState(0);
-  const [redirectProgress, setRedirectProgress] = useState(0);
-  const [redirectSeconds, setRedirectSeconds] = useState(3);
-  const redirectStartedRef = useRef(false);
   const [diagnosisText, setDiagnosisText] = useState(
     "Preparando seu diagnóstico..."
   );
@@ -300,7 +322,7 @@ const Quiz = () => {
   }, [step]);
 
   useEffect(() => {
-    if (step !== 7) {
+    if (step !== 8) {
       return;
     }
 
@@ -406,38 +428,6 @@ const Quiz = () => {
     window.location.href = `https://wa.me/${phone}?text=${msg}`;
   };
 
-  useEffect(() => {
-    if (step !== 9 || redirectStartedRef.current) {
-      return;
-    }
-
-    redirectStartedRef.current = true;
-    setRedirectProgress(0);
-    setRedirectSeconds(3);
-
-    const progressInterval = window.setInterval(() => {
-      setRedirectProgress((current) => Math.min(current + 100 / 60, 100));
-    }, 50);
-
-    const secondsInterval = window.setInterval(() => {
-      setRedirectSeconds((current) => Math.max(current - 1, 0));
-    }, 1000);
-
-    const redirectTimeout = window.setTimeout(() => {
-      window.clearInterval(progressInterval);
-      window.clearInterval(secondsInterval);
-      setRedirectProgress(100);
-      setRedirectSeconds(0);
-      void redirectToSpecialist();
-    }, 3000);
-
-    return () => {
-      window.clearInterval(progressInterval);
-      window.clearInterval(secondsInterval);
-      window.clearTimeout(redirectTimeout);
-    };
-  }, [step]);
-
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -464,7 +454,7 @@ const Quiz = () => {
 
             <div className="w-full mt-4">
               <QuizButton onClick={next} variant="cta">
-                👉 Quero acesso ao catálogo de atacado
+                Começar Agora
               </QuizButton>
             </div>
 
@@ -473,6 +463,56 @@ const Quiz = () => {
         );
 
       case 2:
+        return (
+          <div className="flex flex-col items-center text-center gap-6 py-8 w-full">
+            <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight w-full max-w-md">
+              Vantagens de ser parceiro{" "}
+              <span className="text-primary">Gol Distribuidora</span>
+            </h2>
+
+            <div className="w-full max-w-md flex flex-col gap-3 text-left">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Truck className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-foreground">Pedido mínimo de R$300</p>
+                  <p className="text-xs text-muted-foreground">Compre a partir de R$300 e ganhe frete grátis</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Tag className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-foreground">Preço de atacado</p>
+                  <p className="text-xs text-muted-foreground">Condições exclusivas para revendedores</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-foreground">Pagamento facilitado</p>
+                  <p className="text-xs text-muted-foreground">Boleto a prazo para sua loja comprar sem apertar o caixa</p>
+                </div>
+              </div>
+            </div>
+
+            <BrandCarousel rows={2} />
+
+            <div className="w-full mt-2">
+              <QuizButton onClick={next} variant="cta">
+                Continuar
+              </QuizButton>
+            </div>
+          </div>
+        );
+
+      case 3:
         return (
           <QuestionScreen
             emoji="🏪"
@@ -532,7 +572,7 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 3:
+      case 4:
         return (
           <QuestionScreen
             emoji="💳"
@@ -554,7 +594,7 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 4:
+      case 5:
         return (
           <QuestionScreen
             emoji="📦"
@@ -575,7 +615,7 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 5:
+      case 6:
         return (
           <QuestionScreen
             emoji="💡"
@@ -597,7 +637,7 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 6:
+      case 7:
         return (
           <QuestionScreen
             emoji="👟"
@@ -628,7 +668,7 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 7:
+      case 8:
         return (
           <div className="flex flex-col items-center text-center gap-5 py-8">
             <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center">
@@ -686,8 +726,8 @@ const Quiz = () => {
                   ✅ Diagnóstico concluído!
                 </p>
                 <p className="text-muted-foreground text-sm">
-                  Preencha o formulário com seus dados para ter acesso ao
-                  resultado completo.
+                  Preencha seu cadastro para ter acesso ao catálogo
+                  completo e ao seu diagnóstico personalizado.
                 </p>
                 <div className="pt-2">
                   <QuizButton onClick={next} variant="cta">
@@ -699,7 +739,7 @@ const Quiz = () => {
           </div>
         );
 
-      case 8:
+      case 9:
         return (
           <div className="flex flex-col gap-5 py-4">
             <div className="text-center space-y-2">
@@ -707,10 +747,11 @@ const Quiz = () => {
                 <ShoppingBag className="w-7 h-7 text-primary" />
               </div>
               <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight">
-                Seu diagnóstico está pronto (faltam 10 segundos)
+                Falta pouco para virar parceiro Gol Distribuidora
               </h2>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                Preencha para liberar suas oportunidades de lucro.
+                Complete seu cadastro para ter acesso ao catálogo completo e
+                às condições exclusivas de atacado.
               </p>
             </div>
 
@@ -785,12 +826,12 @@ const Quiz = () => {
               }
               variant="cta"
             >
-              {isLoadingLead ? "Enviando dados..." : "Liberar meu diagnóstico"}
+              {isLoadingLead ? "Cadastrando..." : "Cadastrar Agora"}
             </QuizButton>
           </div>
         );
 
-      case 9: {
+      case 10: {
         const leadName = getLeadName();
         const firstName = leadName.split(" ")[0] || displayName;
         const insights = getDiagnosisInsights(answers, firstName);
@@ -840,29 +881,30 @@ const Quiz = () => {
                 podem dobrar seu giro e uma estimativa de ganho mensal com uma
                 sugestão personalizada.
               </p>
+            </div>
 
-              <div className="w-full rounded-xl border border-border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-foreground">
-                    Estamos te redirecionando em {redirectSeconds} segundo
-                    {redirectSeconds === 1 ? "" : "s"}
-                  </p>
-                  <span className="text-sm font-bold text-primary tabular-nums">
-                    {Math.round(redirectProgress)}%
-                  </span>
-                </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-center">
+                Antes de falar com o consultor
+              </p>
 
-                <div className="h-3 w-full rounded-full bg-border overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${redirectProgress}%` }}
-                    transition={{ duration: 0.15, ease: "linear" }}
-                  />
-                </div>
+              <div className="w-full rounded-xl overflow-hidden border border-border aspect-video">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0`}
+                  title="Gol Distribuidora"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
               </div>
+            </div>
+
+            <QuizButton onClick={redirectToSpecialist} variant="cta" disabled={isSubmittingLead}>
+              {isSubmittingLead ? "Abrindo WhatsApp..." : "Comprar Agora"}
+            </QuizButton>
           </div>
-        </div>
         );
       }
 
@@ -878,7 +920,7 @@ const Quiz = () => {
       {step > 1 && (
         <div className="w-full bg-white border-b border-border px-6 flex items-center justify-between relative shadow-sm" style={{ height: "72px" }}>
           <div className="w-[60px] flex justify-start">
-            {step > 1 && step < 7 && (
+            {step > 1 && step < 8 && (
               <button
                 onClick={prev}
                 className="text-primary text-sm font-medium"
@@ -896,6 +938,8 @@ const Quiz = () => {
           <div className="w-[60px]" />
         </div>
       )}
+
+      {step >= 3 && step <= 8 && <BannerCarousel variant="strip" />}
 
       {step > 1 && step < TOTAL_STEPS && (
         <ProgressBar current={step - 1} total={TOTAL_STEPS - 1} />
