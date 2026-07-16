@@ -1,6 +1,15 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Sparkles, Truck, CreditCard, Tag } from "lucide-react";
+import {
+  ShoppingBag,
+  ClipboardList,
+  PackageSearch,
+  Headset,
+  Handshake,
+  ListChecks,
+  CheckCircle2,
+  MessageSquareText,
+} from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import OptionButton from "./OptionButton";
 import QuizButton from "./QuizButton";
@@ -12,7 +21,7 @@ import logo from "../assets/logo-gol.webp";
 
 declare function fbq(...args: unknown[]): void;
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 16;
 const VIDEO_ID = "5MnWu0N5LRk";
 const WEBHOOK_URL = "/api/webhooks/leads/cmq0tkyiw0003dnk3jtdpcj6i";
 const WHATSAPP_NUMBER = "5586999840542";
@@ -24,21 +33,29 @@ const slideVariants = {
 };
 
 type Answers = {
-  tipoLoja: string;
-  tipoLojaOutro: string;
-  investimentoMercadoria: string;
-  estoqueParado: string;
-  areaMelhorar: string;
-  produtos: string[];
-  estado: string;
+  situacaoEmpresa: string;
+  formatoOperacao: string;
+  formatoOperacaoOutro: string;
+  participacaoCalcados: string;
+  publico: string[];
+  comportamentoConsumidor: string;
+  principalDesafio: string;
+  faixaInvestimento: string;
+  frequenciaCompra: string;
+  momentoCompra: string;
+  criterioFornecedor: string;
+  demandaEspecifica: string;
+  nome: string;
+  cargo: string;
+  cargoOutro: string;
+  whatsapp: string;
+  cnpj: string;
+  nomeEmpresa: string;
   cidade: string;
-  nomeUsuario: string;
-  nomeCompleto: string;
+  estado: string;
   email: string;
-  telefone: string;
-  documento: string;
+  consentimento: boolean;
 };
-
 
 function getUTMs() {
   const p = new URLSearchParams(window.location.search);
@@ -99,10 +116,24 @@ function validarCNPJ(cnpj: string): boolean {
   return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
 }
 
+function cargoFinal(answers: Answers): string {
+  if (answers.cargo === "Outro" && answers.cargoOutro.trim()) {
+    return answers.cargoOutro.trim();
+  }
+  return answers.cargo;
+}
+
+function formatoOperacaoFinal(answers: Answers): string {
+  if (answers.formatoOperacao === "Outro" && answers.formatoOperacaoOutro.trim()) {
+    return answers.formatoOperacaoOutro.trim();
+  }
+  return answers.formatoOperacao;
+}
+
 async function sendWebhookLead(answers: Answers) {
-  const leadName = answers.nomeCompleto || answers.nomeUsuario || "Lead";
-  const normalizedPhone = answers.telefone.replace(/\D/g, "");
-  const normalizedDoc = answers.documento.replace(/\D/g, "");
+  const leadName = answers.nome || "Lead";
+  const normalizedPhone = answers.whatsapp.replace(/\D/g, "");
+  const normalizedDoc = answers.cnpj.replace(/\D/g, "");
   const fbclid = getFbclid();
   const tracking = getTrackingParams();
 
@@ -117,14 +148,22 @@ async function sendWebhookLead(answers: Answers) {
         city: answers.cidade,
         state: answers.estado,
         document: normalizedDoc || undefined,
-        pipeline_stage: "Diagnóstico Quiz Gol",
+        pipeline_stage: "Pedido Consultivo Quiz Gol",
         notes: [
-          `Tipo de loja: ${answers.tipoLoja || "Não informado"}`,
-          `Investimento mensal em mercadoria: ${answers.investimentoMercadoria || "Não informado"}`,
-          `Produto parado no estoque: ${answers.estoqueParado || "Não informado"}`,
-          `Área que quer melhorar: ${answers.areaMelhorar || "Não informado"}`,
-          `Categorias trabalhadas: ${answers.produtos.length > 0 ? answers.produtos.join(", ") : "Não informado"}`,
-          answers.documento ? `CNPJ: ${answers.documento}` : "",
+          `Empresa: ${answers.nomeEmpresa || "Não informado"}`,
+          `Cargo: ${cargoFinal(answers) || "Não informado"}`,
+          `Situação da empresa: ${answers.situacaoEmpresa || "Não informado"}`,
+          `Formato da operação: ${formatoOperacaoFinal(answers) || "Não informado"}`,
+          `Participação dos calçados no negócio: ${answers.participacaoCalcados || "Não informado"}`,
+          `Público atendido: ${answers.publico.length > 0 ? answers.publico.join(", ") : "Não informado"}`,
+          `Comportamento dos consumidores: ${answers.comportamentoConsumidor || "Não informado"}`,
+          `Principal desafio: ${answers.principalDesafio || "Não informado"}`,
+          `Faixa de investimento por pedido: ${answers.faixaInvestimento || "Não informado"}`,
+          `Frequência de compra: ${answers.frequenciaCompra || "Não informado"}`,
+          `Momento da próxima compra: ${answers.momentoCompra || "Não informado"}`,
+          `Critério para escolher fornecedor: ${answers.criterioFornecedor || "Não informado"}`,
+          answers.demandaEspecifica ? `Demanda específica: ${answers.demandaEspecifica}` : "",
+          answers.cnpj ? `CNPJ: ${answers.cnpj}` : "",
           fbclid ? `Fbclid: ${fbclid}` : "",
         ].filter(Boolean).join("\n"),
         fbclid,
@@ -140,7 +179,6 @@ async function sendWebhookLead(answers: Answers) {
     console.error("Webhook request error", error);
   }
 }
-
 
 function updateQuizHash(step: number) {
   const nextHash = `#etapa-${step}`;
@@ -162,199 +200,53 @@ function trackQuizStep(step: number) {
     }
 
     fbq("trackCustom", "QuizStepView", {
-      quiz_name: "gol_distribuidora_diagnostico",
+      quiz_name: "gol_distribuidora_pedido_consultivo",
       step_number: step,
       step_name: `etapa-${step}`,
       step_url: `${window.location.pathname}${window.location.search}#etapa-${step}`,
     });
 
     fbq("trackCustom", `Quiz_Etapa_${step}`, {
-      quiz_name: "gol_distribuidora_diagnostico",
+      quiz_name: "gol_distribuidora_pedido_consultivo",
       step_number: step,
     });
   } catch (error) {
     console.error("Meta Pixel step tracking error", error);
   }
 }
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
-type DiagnosisInsight = {
-  icon: string;
-  title: string;
-  text: string;
-  highlight?: boolean;
-};
-
-function getDiagnosisInsights(answers: Answers, name: string): DiagnosisInsight[] {
-  const insights: DiagnosisInsight[] = [];
-  const loja = answers.tipoLoja || "loja";
-
-  if (answers.estoqueParado === "Muito") {
-    insights.push({
-      icon: "⚠️",
-      title: "Estoque parado travando margem",
-      text: `${name}, sua ${loja.toLowerCase()} pode estar com capital preso em modelos de baixo giro. Revisar o mix com foco em marcas de alto giro ajuda a liberar caixa e abrir espaço para pares que vendem mais rápido.`,
-      highlight: true,
-    });
-  } else if (answers.estoqueParado === "Um pouco") {
-    insights.push({
-      icon: "📦",
-      title: "Oportunidade de margem no estoque",
-      text: `${name}, há sinal de estoque parado, mas ainda dá para corrigir rápido. Ajustar o mix para categorias com maior giro regional pode melhorar a rentabilidade sem precisar aumentar volume de compras.`,
-      highlight: true,
-    });
-  } else {
-    insights.push({
-      icon: "📈",
-      title: "Base sólida para crescer",
-      text: `${name}, com pouco produto parado, o próximo passo é usar esse capital de giro para fortalecer as categorias que aumentam o ticket médio por par vendido.`,
-      highlight: true,
-    });
-  }
-
-  // Insight 2: categoria de maior oportunidade
-  const catMsg: Record<string, { title: string; text: string }> = {
-    "Feminino": {
-      title: "Feminino: maior volume e fidelização",
-      text: "A categoria feminina concentra o maior volume de vendas em lojas de calçados do Nordeste. Um mix variado com marcas de alto giro e boa aceitação regional garante recompra frequente.",
-    },
-    "Masculino": {
-      title: "Masculino: conforto que vende sozinho",
-      text: "Calçados masculinos com foco em conforto e praticidade têm alta aceitação no varejo regional. Posicionar bem essa categoria reduz negociação de preço com o cliente.",
-    },
-    "Infantil": {
-      title: "Infantil: venda recorrente que fideliza a família",
-      text: "A linha infantil tem recompra garantida — criança cresce e o cliente volta. Uma família fidelizada na categoria infantil tende a comprar em outras categorias da mesma loja.",
-    },
-    "Baby": {
-      title: "Baby: margem diferenciada e público especial",
-      text: "Calçados baby têm percepção de valor mais alta e margem diferenciada. É uma categoria de presente frequente, com compra emocional e menor resistência a preço.",
-    },
-    "Licenciados": {
-      title: "Licenciados: o cliente já quer antes de ver o preço",
-      text: "Personagens licenciados eliminam a comparação de preço — o cliente quer aquele produto específico. Isso aumenta a margem e reduz o esforço de venda.",
-    },
-  };
-
-  const destaque = answers.produtos.find((p) => catMsg[p]);
-  if (destaque) {
-    insights.push({ icon: "👟", ...catMsg[destaque] });
-  }
-
-  const areaMsg: Record<string, { title: string; text: string }> = {
-    "Giro de produtos": {
-      title: "Pares que deveriam girar mais",
-      text: "A prioridade é identificar quais categorias têm maior saída na sua região e reduzir compras de modelos que ficam parados na prateleira consumindo capital.",
-    },
-    "Ticket médio": {
-      title: "Ticket médio com o mix certo",
-      text: "Combinar categorias como licenciados, feminino e infantil pode elevar o valor médio de cada venda sem depender de desconto para fechar o pedido.",
-    },
-    "Mix de categorias": {
-      title: "Mix mais rentável por metro de prateleira",
-      text: "Um mix equilibrado de marcas de alto giro evita excesso de modelos parecidos e fortalece as categorias com maior margem e recompra na sua região.",
-    },
-    "Margem de lucro": {
-      title: "Mais margem por par vendido",
-      text: "Trabalhar com distribuição exclusiva reduz a concorrência direta e permite sustentar uma margem maior sem perder vendas para o mesmo produto no concorrente.",
-    },
-  };
-
-  if (answers.areaMelhorar && areaMsg[answers.areaMelhorar]) {
-    insights.push({ icon: "💰", ...areaMsg[answers.areaMelhorar] });
-  }
-
-  const investMsg: Record<string, { title: string; text: string }> = {
-    "Até R$1.000": {
-      title: "Primeiro pedido: comece pelo mix de alto giro",
-      text: `${name}, com um investimento inicial menor, o segredo é concentrar a compra em categorias de giro comprovado antes de diversificar — isso reduz o risco de capital parado logo no início.`,
-    },
-    "R$1.000 – R$5.000": {
-      title: "Espaço para negociar melhores condições",
-      text: `${name}, nesse volume de compra mensal já dá para negociar condições diferenciadas de atacado e testar mais de uma categoria sem comprometer o caixa.`,
-    },
-    "R$5.000 – R$15.000": {
-      title: "Volume que justifica distribuição direta",
-      text: `${name}, com esse volume mensal, comprar direto do distribuidor (sem intermediários) tende a aumentar sua margem de forma significativa em relação a fornecedores menores.`,
-    },
-    "Acima de R$15.000": {
-      title: "Perfil para condições exclusivas de atacado",
-      text: `${name}, com esse volume, sua loja se qualifica para condições comerciais exclusivas e prioridade de atendimento — o ideal é alinhar isso direto com um consultor.`,
-    },
-  };
-
-  if (answers.investimentoMercadoria && investMsg[answers.investimentoMercadoria]) {
-    insights.push({ icon: "📊", ...investMsg[answers.investimentoMercadoria] });
-  }
-
-  return insights;
-}
 
 const Quiz = () => {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<Answers>({
-    tipoLoja: "",
-    tipoLojaOutro: "",
-    investimentoMercadoria: "",
-    estoqueParado: "",
-    areaMelhorar: "",
-    produtos: [],
-    estado: "",
+    situacaoEmpresa: "",
+    formatoOperacao: "",
+    formatoOperacaoOutro: "",
+    participacaoCalcados: "",
+    publico: [],
+    comportamentoConsumidor: "",
+    principalDesafio: "",
+    faixaInvestimento: "",
+    frequenciaCompra: "",
+    momentoCompra: "",
+    criterioFornecedor: "",
+    demandaEspecifica: "",
+    nome: "",
+    cargo: "",
+    cargoOutro: "",
+    whatsapp: "",
+    cnpj: "",
+    nomeEmpresa: "",
     cidade: "",
-    nomeUsuario: "",
-    nomeCompleto: "",
+    estado: "",
     email: "",
-    telefone: "",
-    documento: "",
+    consentimento: true,
   });
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [isLoadingLead, setIsLoadingLead] = useState(false);
   const [webhookSent, setWebhookSent] = useState(false);
-  const [diagnosisProgress, setDiagnosisProgress] = useState(0);
-  const [diagnosisText, setDiagnosisText] = useState(
-    "Preparando seu diagnóstico..."
-  );
 
   useEffect(() => {
     trackQuizStep(step);
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== 8) {
-      return;
-    }
-
-    const textSteps = [
-      "Analisando seu perfil de loja...",
-      "Comparando com padrões de lojas da sua região...",
-      "Identificando oportunidades de margem no seu mix...",
-      "Finalizando seu diagnóstico de rentabilidade...",
-    ];
-
-    setDiagnosisProgress(0);
-    setDiagnosisText(textSteps[0]);
-
-    let progress = 0;
-
-    const interval = window.setInterval(() => {
-      progress += 1;
-      setDiagnosisProgress(progress);
-
-      if (progress < 25) setDiagnosisText(textSteps[0]);
-      else if (progress < 50) setDiagnosisText(textSteps[1]);
-      else if (progress < 75) setDiagnosisText(textSteps[2]);
-      else setDiagnosisText(textSteps[3]);
-
-      if (progress >= 100) {
-        window.clearInterval(interval);
-      }
-    }, 50);
-
-    return () => {
-      window.clearInterval(interval);
-    };
   }, [step]);
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
@@ -364,28 +256,26 @@ const Quiz = () => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   };
 
-  const displayName = answers.nomeUsuario || "amigo";
-
-  const toggleProduct = (product: string) => {
+  const togglePublico = (opt: string) => {
     setAnswers((prev) => {
-      const current = prev.produtos;
+      const current = prev.publico;
 
-      if (product === "Não trabalho muito esses produtos") {
+      if (opt === "Ainda estou conhecendo melhor meu público") {
         return {
           ...prev,
-          produtos: current.includes(product) ? [] : [product],
+          publico: current.includes(opt) ? [] : [opt],
         };
       }
 
       const filtered = current.filter(
-        (p) => p !== "Não trabalho muito esses produtos"
+        (p) => p !== "Ainda estou conhecendo melhor meu público"
       );
 
       return {
         ...prev,
-        produtos: filtered.includes(product)
-          ? filtered.filter((p) => p !== product)
-          : [...filtered, product],
+        publico: filtered.includes(opt)
+          ? filtered.filter((p) => p !== opt)
+          : [...filtered, opt],
       };
     });
   };
@@ -395,8 +285,21 @@ const Quiz = () => {
     setTimeout(next, 350);
   };
 
-  const getLeadName = () => {
-    return answers.nomeCompleto || answers.nomeUsuario || displayName;
+  const submitForm = async () => {
+    if (isLoadingLead) {
+      return;
+    }
+
+    setIsLoadingLead(true);
+    await sendWebhookLead(answers);
+    setWebhookSent(true);
+    try {
+      fbq("track", "Lead");
+    } catch (_) {
+      // Meta Pixel not loaded
+    }
+    setIsLoadingLead(false);
+    next();
   };
 
   const redirectToSpecialist = async () => {
@@ -410,19 +313,27 @@ const Quiz = () => {
       await sendWebhookLead(answers);
     }
 
-    const leadName = getLeadName();
     const phone = WHATSAPP_NUMBER;
     const msg = encodeURIComponent(
-      `Olá! Fiz o diagnóstico no site e gostaria de falar com um consultor.\n\n` +
-        `Nome: ${leadName}\n` +
-        `Telefone: ${answers.telefone}\n` +
+      `Olá! Preenchi o diagnóstico da Gol Distribuidora e quero receber uma sugestão de pedido.\n\n` +
+        `Nome: ${answers.nome}\n` +
+        `Cargo: ${cargoFinal(answers)}\n` +
+        `Empresa: ${answers.nomeEmpresa}\n` +
+        `WhatsApp: ${answers.whatsapp}\n` +
         `E-mail: ${answers.email}\n` +
-        `CNPJ: ${answers.documento}\n` +
-        `Tipo de loja: ${answers.tipoLoja}\n` +
-        `Cidade: ${answers.cidade} / ${answers.estado}\n` +
-        `Investimento mensal: ${answers.investimentoMercadoria}\n` +
-        `Estoque parado: ${answers.estoqueParado}\n` +
-        `Área que quer melhorar: ${answers.areaMelhorar}`
+        `CNPJ: ${answers.cnpj}\n` +
+        `Cidade: ${answers.cidade} / ${answers.estado}\n\n` +
+        `Situação da empresa: ${answers.situacaoEmpresa}\n` +
+        `Formato da operação: ${formatoOperacaoFinal(answers)}\n` +
+        `Participação dos calçados: ${answers.participacaoCalcados}\n` +
+        `Público atendido: ${answers.publico.join(", ")}\n` +
+        `Comportamento dos consumidores: ${answers.comportamentoConsumidor}\n` +
+        `Principal desafio: ${answers.principalDesafio}\n` +
+        `Faixa de investimento: ${answers.faixaInvestimento}\n` +
+        `Frequência de compra: ${answers.frequenciaCompra}\n` +
+        `Momento da próxima compra: ${answers.momentoCompra}\n` +
+        `Critério para escolher fornecedor: ${answers.criterioFornecedor}` +
+        (answers.demandaEspecifica ? `\nDemanda específica: ${answers.demandaEspecifica}` : "")
     );
 
     window.location.href = `https://wa.me/${phone}?text=${msg}`;
@@ -435,27 +346,30 @@ const Quiz = () => {
           <div className="flex flex-col items-center text-center gap-6 py-8 w-full">
             <img src={logo} alt="Gol Distribuidora" className="h-24 w-auto" />
 
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-primary">
+              Atendimento B2B para empresas com CNPJ
+            </span>
+
             <h1 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight w-full max-w-md">
-              Sua loja tem o perfil para ser{" "}
-              <span className="text-primary">parceira Gol Distribuidora?</span>
+              Comece a montar seu próximo{" "}
+              <span className="text-primary">pedido de calçados com a Gol</span>
             </h1>
 
             <p className="text-muted-foreground text-base md:text-lg w-full max-w-md">
-              Cadastro rápido e simples. Um consultor exclusivo vai te chamar
-              no WhatsApp com o catálogo completo e os valores de atacado das
-              principais marcas.
+              Antes de recomendar qualquer produto, precisamos entender como sua
+              loja funciona. Responda algumas perguntas sobre sua operação, seus
+              clientes, seu estoque e seu momento de compra — um consultor da
+              Gol vai preparar uma sugestão de pedido personalizada pelo
+              WhatsApp.
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-primary text-center w-full max-w-md">
-              <span className="rounded-lg bg-primary/10 px-3 py-2">💳 Boleto a prazo</span>
-              <span className="rounded-lg bg-primary/10 px-3 py-2">🚚 Frete grátis acima de R$300</span>
-              <span className="rounded-lg bg-primary/10 px-3 py-2">🏷️ Preço de atacado</span>
-            </div>
 
             <div className="w-full mt-4">
               <QuizButton onClick={next} variant="cta">
-                Começar Agora
+                Começar a montar meu pedido
               </QuizButton>
+              <p className="text-xs text-muted-foreground mt-2">
+                Leva poucos minutos. Tenha as informações da sua empresa em mãos.
+              </p>
             </div>
 
             <BrandCarousel />
@@ -466,38 +380,48 @@ const Quiz = () => {
         return (
           <div className="flex flex-col items-center text-center gap-6 py-8 w-full">
             <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight w-full max-w-md">
-              Vantagens de ser parceiro{" "}
-              <span className="text-primary">Gol Distribuidora</span>
+              Como funciona o{" "}
+              <span className="text-primary">Pedido Consultivo Gol</span>
             </h2>
 
             <div className="w-full max-w-md flex flex-col gap-3 text-left">
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Truck className="w-5 h-5 text-primary" />
+                  <ClipboardList className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-foreground">Pedido mínimo de R$300</p>
-                  <p className="text-xs text-muted-foreground">Compre a partir de R$300 e ganhe frete grátis</p>
+                  <p className="font-bold text-sm text-foreground">Análise da realidade da sua loja</p>
+                  <p className="text-xs text-muted-foreground">Entendemos seu público, sua operação e os desafios atuais do estoque</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Tag className="w-5 h-5 text-primary" />
+                  <PackageSearch className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-foreground">Preço de atacado</p>
-                  <p className="text-xs text-muted-foreground">Condições exclusivas para revendedores</p>
+                  <p className="font-bold text-sm text-foreground">Sugestão personalizada de pedido</p>
+                  <p className="text-xs text-muted-foreground">O consultor recomenda um mix de produtos compatível com o perfil do seu negócio</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <CreditCard className="w-5 h-5 text-primary" />
+                  <Headset className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-foreground">Pagamento facilitado</p>
-                  <p className="text-xs text-muted-foreground">Boleto a prazo para sua loja comprar sem apertar o caixa</p>
+                  <p className="font-bold text-sm text-foreground">Atendimento comercial próximo</p>
+                  <p className="text-xs text-muted-foreground">Você recebe orientação para comparar opções e ajustar o pedido antes de comprar</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Handshake className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-foreground">Parceria além da entrega</p>
+                  <p className="text-xs text-muted-foreground">A Gol busca construir um relacionamento baseado em assistência, continuidade e giro</p>
                 </div>
               </div>
             </div>
@@ -515,54 +439,81 @@ const Quiz = () => {
       case 3:
         return (
           <QuestionScreen
-            emoji="🏪"
-            question="Qual tipo de loja você tem?"
+            emoji="🏢"
+            question="Qual é a situação atual da sua empresa?"
+            subtitle="A Gol trabalha principalmente com operações comerciais formalizadas. Essa informação ajuda nossa equipe a conduzir o atendimento corretamente."
+          >
+            {[
+              "Possuo CNPJ ativo",
+              "Sou MEI com atividade comercial",
+              "Meu CNPJ está em processo de regularização",
+              "Ainda não possuo CNPJ",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.situacaoEmpresa === opt}
+                onClick={() => selectAndNext("situacaoEmpresa", opt)}
+              />
+            ))}
+          </QuestionScreen>
+        );
+
+      case 4:
+        return (
+          <QuestionScreen
+            emoji="🏬"
+            question="Qual é o principal formato da sua operação?"
+            subtitle="O formato da loja influencia diretamente a recomendação do consultor."
           >
             {[
               "Loja de calçados",
-              "Bazar / Loja de variedades",
-              "Mercadinho / Mercearia",
+              "Supermercado ou mercadinho",
               "Loja multimarcas",
+              "Bazar ou loja de variedades",
+              "Loja de roupas com seção de calçados",
+              "E-commerce com operação ativa",
+              "Venda por WhatsApp ou redes sociais",
               "Outro",
             ].map((opt) => (
               <OptionButton
                 key={opt}
                 label={opt}
                 selected={
-                  answers.tipoLoja === opt ||
-                  (opt === "Outro" && Boolean(answers.tipoLojaOutro))
+                  answers.formatoOperacao === opt ||
+                  (opt === "Outro" && Boolean(answers.formatoOperacaoOutro))
                 }
                 onClick={() => {
                   if (opt === "Outro") {
-                    setAnswer("tipoLoja", opt);
+                    setAnswer("formatoOperacao", opt);
                     return;
                   }
 
                   setAnswers((prev) => ({
                     ...prev,
-                    tipoLoja: opt,
-                    tipoLojaOutro: "",
+                    formatoOperacao: opt,
+                    formatoOperacaoOutro: "",
                   }));
                   setTimeout(next, 350);
                 }}
               />
             ))}
 
-            {(answers.tipoLoja === "Outro" || answers.tipoLojaOutro) && (
+            {(answers.formatoOperacao === "Outro" || answers.formatoOperacaoOutro) && (
               <>
                 <QuizInput
-                  value={answers.tipoLojaOutro}
-                  onChange={(v) => setAnswer("tipoLojaOutro", v)}
-                  placeholder="Digite o tipo de loja"
+                  value={answers.formatoOperacaoOutro}
+                  onChange={(v) => setAnswer("formatoOperacaoOutro", v)}
+                  placeholder="Digite o formato da sua operação"
                 />
 
                 <div className="mt-2">
                   <QuizButton
                     onClick={() => {
-                      setAnswer("tipoLoja", answers.tipoLojaOutro.trim());
+                      setAnswer("formatoOperacaoOutro", answers.formatoOperacaoOutro.trim());
                       setTimeout(next, 150);
                     }}
-                    disabled={!answers.tipoLojaOutro.trim()}
+                    disabled={!answers.formatoOperacaoOutro.trim()}
                   >
                     Continuar
                   </QuizButton>
@@ -572,44 +523,25 @@ const Quiz = () => {
           </QuestionScreen>
         );
 
-      case 4:
-        return (
-          <QuestionScreen
-            emoji="💳"
-            question="Quanto você investe por mês em mercadoria?"
-          >
-            {[
-              "Até R$1.000",
-              "R$1.000 – R$5.000",
-              "R$5.000 – R$15.000",
-              "Acima de R$15.000",
-            ].map((opt) => (
-              <OptionButton
-                key={opt}
-                label={opt}
-                selected={answers.investimentoMercadoria === opt}
-                onClick={() => selectAndNext("investimentoMercadoria", opt)}
-              />
-            ))}
-          </QuestionScreen>
-        );
-
       case 5:
         return (
           <QuestionScreen
-            emoji="📦"
-            question="Hoje, você sente que tem produto parado no estoque?"
+            emoji="👟"
+            question="Como os calçados participam do seu negócio atualmente?"
+            subtitle="Essa informação ajuda o consultor a identificar se sua loja precisa de um mix inicial, reposição, ampliação de variedade ou reorganização da categoria."
           >
             {[
-              "Muito",
-              "Um pouco",
-              "Quase nada",
+              "São uma das principais categorias da loja",
+              "São uma categoria complementar",
+              "Estou começando a vender agora",
+              "Pretendo começar nos próximos 30 dias",
+              "Ainda estou pesquisando fornecedores",
             ].map((opt) => (
               <OptionButton
                 key={opt}
                 label={opt}
-                selected={answers.estoqueParado === opt}
-                onClick={() => selectAndNext("estoqueParado", opt)}
+                selected={answers.participacaoCalcados === opt}
+                onClick={() => selectAndNext("participacaoCalcados", opt)}
               />
             ))}
           </QuestionScreen>
@@ -618,128 +550,271 @@ const Quiz = () => {
       case 6:
         return (
           <QuestionScreen
-            emoji="💡"
-            question="Qual dessas áreas você mais quer melhorar?"
+            emoji="👥"
+            question="Quais públicos sua loja atende com maior frequência?"
+            subtitle="Pode selecionar mais de uma opção. O consultor usará essa informação para recomendar as linhas mais adequadas."
           >
             {[
-              "Giro de produtos",
-              "Ticket médio",
-              "Mix de categorias",
-              "Margem de lucro",
+              "Mulheres",
+              "Homens",
+              "Famílias",
+              "Pais e responsáveis comprando para crianças",
+              "Adolescentes e jovens",
+              "Público que busca conforto e uso diário",
+              "Público que busca moda e novidades",
+              "Público variado",
+              "Ainda estou conhecendo melhor meu público",
             ].map((opt) => (
               <OptionButton
                 key={opt}
                 label={opt}
-                selected={answers.areaMelhorar === opt}
-                onClick={() => selectAndNext("areaMelhorar", opt)}
-              />
-            ))}
-          </QuestionScreen>
-        );
-
-      case 7:
-        return (
-          <QuestionScreen
-            emoji="👟"
-            question="Quais categorias de calçados você mais trabalha?"
-            subtitle="(Pode selecionar mais de uma opção)"
-          >
-            {[
-              "Feminino",
-              "Masculino",
-              "Infantil",
-              "Baby",
-              "Licenciados",
-            ].map((opt) => (
-              <OptionButton
-                key={opt}
-                label={opt}
-                selected={answers.produtos.includes(opt)}
-                onClick={() => toggleProduct(opt)}
+                selected={answers.publico.includes(opt)}
+                onClick={() => togglePublico(opt)}
                 multiSelect
               />
             ))}
 
             <div className="mt-2">
-              <QuizButton onClick={next} disabled={answers.produtos.length === 0}>
+              <QuizButton onClick={next} disabled={answers.publico.length === 0}>
                 Continuar
               </QuizButton>
             </div>
           </QuestionScreen>
         );
 
+      case 7:
+        return (
+          <QuestionScreen
+            emoji="💬"
+            question="Qual situação acontece com mais frequência no atendimento aos seus clientes?"
+            subtitle="Isso ajuda o consultor a montar uma recomendação baseada na realidade da loja — não apenas em um catálogo genérico."
+          >
+            {[
+              "Pedem marcas ou modelos que não tenho",
+              "Pedem numerações ou cores que acabam rápido",
+              "Procuram principalmente opções confortáveis",
+              "Procuram novidades e modelos diferentes",
+              "Procuram produtos acessíveis para uso diário",
+              "Perguntam por produtos infantis",
+              "O público é muito variado",
+              "Ainda não consigo identificar um padrão",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.comportamentoConsumidor === opt}
+                onClick={() => selectAndNext("comportamentoConsumidor", opt)}
+              />
+            ))}
+          </QuestionScreen>
+        );
+
       case 8:
         return (
-          <div className="flex flex-col items-center text-center gap-5 py-8">
-            <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-secondary" />
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight">
-                Estamos analisando seu perfil
-              </h2>
-              <p className="text-primary font-semibold text-base">
-                e comparando com padrões da sua região
-              </p>
-            </div>
-
-            <p className="text-muted-foreground text-sm max-w-sm">
-              Identificando oportunidades escondidas de faturamento no seu
-              estoque.
-            </p>
-
-            <div className="w-full max-w-md space-y-2">
-              <div className="flex items-center justify-between px-0.5">
-                <p className="text-sm text-muted-foreground">{diagnosisText}</p>
-                <span className="text-base font-bold text-primary tabular-nums">
-                  {diagnosisProgress}%
-                </span>
-              </div>
-
-              <div className="w-full h-3 rounded-full bg-border overflow-hidden relative">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-secondary relative overflow-hidden"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${diagnosisProgress}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                >
-                  {diagnosisProgress < 100 && (
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                      animate={{ x: ["-100%", "200%"] }}
-                      transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
-                    />
-                  )}
-                </motion.div>
-              </div>
-            </div>
-
-            {diagnosisProgress === 100 && (
-              <motion.div
-                className="w-full max-w-md text-left space-y-2 pt-1"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <p className="text-foreground font-bold text-lg">
-                  ✅ Diagnóstico concluído!
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  Preencha seu cadastro para ter acesso ao catálogo
-                  completo e ao seu diagnóstico personalizado.
-                </p>
-                <div className="pt-2">
-                  <QuizButton onClick={next} variant="cta">
-                    Continuar
-                  </QuizButton>
-                </div>
-              </motion.div>
-            )}
-          </div>
+          <QuestionScreen
+            emoji="⚠️"
+            question="Qual situação mais prejudica o resultado da sua seção de calçados hoje?"
+            subtitle="O preço é apenas uma parte de uma boa compra. Para alguns lojistas, o maior problema é o estoque parado; para outros, é a falta de novidade ou assistência."
+          >
+            {[
+              "Produtos que ficam meses sem vender",
+              "Falta de variedade e novidades",
+              "Dificuldade para repor o que vende bem",
+              "Falta de numerações e cores",
+              "Fornecedor sem assistência depois da compra",
+              "Margem de lucro apertada",
+              "Falta de tempo para organizar os pedidos",
+              "Dificuldade para saber o que comprar",
+              "Estou começando e ainda não sei",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.principalDesafio === opt}
+                onClick={() => selectAndNext("principalDesafio", opt)}
+              />
+            ))}
+          </QuestionScreen>
         );
 
       case 9:
+        return (
+          <QuestionScreen
+            emoji="💰"
+            question="Quanto sua empresa costuma investir em cada pedido de calçados?"
+            subtitle="A faixa abaixo ajuda o consultor a sugerir um pedido compatível com o tamanho e o momento da sua operação."
+          >
+            {[
+              "Até R$ 1.000",
+              "De R$ 1.000 a R$ 5.000",
+              "De R$ 5.000 a R$ 15.000",
+              "Acima de R$ 15.000",
+              "Ainda não fiz meu primeiro pedido de calçados",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.faixaInvestimento === opt}
+                onClick={() => selectAndNext("faixaInvestimento", opt)}
+              />
+            ))}
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              A resposta não representa obrigação ou compromisso de compra. Ela serve para orientar o atendimento.
+            </p>
+          </QuestionScreen>
+        );
+
+      case 10:
+        return (
+          <QuestionScreen
+            emoji="🔁"
+            question="Com que frequência sua empresa costuma comprar calçados?"
+            subtitle="Lojas que compram semanalmente possuem uma necessidade diferente das que renovam o estoque mensalmente ou em períodos específicos."
+          >
+            {[
+              "Toda semana",
+              "A cada 15 dias",
+              "Uma vez por mês",
+              "A cada dois ou três meses",
+              "Apenas em datas ou períodos específicos",
+              "Ainda não tenho uma frequência definida",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.frequenciaCompra === opt}
+                onClick={() => selectAndNext("frequenciaCompra", opt)}
+              />
+            ))}
+          </QuestionScreen>
+        );
+
+      case 11:
+        return (
+          <QuestionScreen
+            emoji="📅"
+            question="Quando você pretende realizar seu próximo pedido de calçados?"
+            subtitle="Essa resposta ajuda a equipe comercial a organizar o atendimento de acordo com a urgência da sua loja."
+          >
+            {[
+              "Nos próximos 7 dias",
+              "Nos próximos 15 dias",
+              "Nos próximos 30 dias",
+              "Entre 30 e 90 dias",
+              "Ainda não tenho uma data definida",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.momentoCompra === opt}
+                onClick={() => selectAndNext("momentoCompra", opt)}
+              />
+            ))}
+          </QuestionScreen>
+        );
+
+      case 12:
+        return (
+          <QuestionScreen
+            emoji="🤝"
+            question="O que mais pesa na hora de escolher um fornecedor de calçados?"
+            subtitle="Não existe resposta certa. Queremos entender a prioridade da sua empresa."
+          >
+            {[
+              "Encontrar sempre o menor preço",
+              "Trabalhar com marcas procuradas pelos clientes",
+              "Ter variedade e novidades",
+              "Receber assistência depois da compra",
+              "Ter um representante que conheça minha loja",
+              "Conseguir renovar produtos com baixo giro",
+              "Receber apoio para ações e vendas",
+              "Ter boas condições de pagamento",
+              "Ter facilidade de reposição",
+            ].map((opt) => (
+              <OptionButton
+                key={opt}
+                label={opt}
+                selected={answers.criterioFornecedor === opt}
+                onClick={() => selectAndNext("criterioFornecedor", opt)}
+              />
+            ))}
+          </QuestionScreen>
+        );
+
+      case 13:
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">
+                <MessageSquareText className="w-6 h-6 text-primary" />
+              </span>
+              <div>
+                <h2 className="text-lg md:text-xl font-bold text-foreground">
+                  Existe alguma demanda específica que o consultor precisa conhecer?
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Qual produto, marca, modelo ou necessidade seus clientes mais pedem e você nem sempre consegue atender? (opcional)
+                </p>
+              </div>
+            </div>
+
+            <textarea
+              value={answers.demandaEspecifica}
+              onChange={(e) => setAnswer("demandaEspecifica", e.target.value)}
+              placeholder="Exemplo: calçados infantis, sandálias confortáveis, numeração grande, modelos femininos, reposição de uma marca específica..."
+              rows={3}
+              className="w-full p-4 rounded-lg border-2 border-border bg-card text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+            />
+
+            <QuizButton onClick={next} variant="cta">
+              Continuar
+            </QuizButton>
+          </div>
+        );
+
+      case 14:
+        return (
+          <div className="flex flex-col gap-5 py-4">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                <ListChecks className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight">
+                Já temos as informações necessárias para entender sua loja
+              </h2>
+              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                Agora, suas respostas serão encaminhadas para a equipe comercial da Gol. O consultor utilizará essas informações para analisar:
+              </p>
+            </div>
+
+            <ul className="flex flex-col gap-2 max-w-sm mx-auto w-full">
+              {[
+                "O formato da sua operação",
+                "O perfil dos consumidores",
+                "O estágio atual da categoria",
+                "A faixa e a frequência de compra",
+                "Os desafios do estoque",
+                "As prioridades na escolha de um fornecedor",
+                "O momento da próxima compra",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <p className="text-sm font-semibold text-foreground text-center">
+              Falta apenas informar seus dados para receber o atendimento
+            </p>
+
+            <QuizButton onClick={next} variant="cta">
+              Continuar
+            </QuizButton>
+          </div>
+        );
+
+      case 15:
         return (
           <div className="flex flex-col gap-5 py-4">
             <div className="text-center space-y-2">
@@ -747,37 +822,64 @@ const Quiz = () => {
                 <ShoppingBag className="w-7 h-7 text-primary" />
               </div>
               <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight">
-                Falta pouco para virar parceiro Gol Distribuidora
+                Finalize seus dados para receber uma sugestão personalizada de pedido
               </h2>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                Complete seu cadastro para ter acesso ao catálogo completo e
-                às condições exclusivas de atacado.
+                Um consultor da Gol vai analisar a realidade da sua loja e entrar em contato pelo WhatsApp para apresentar marcas, produtos e opções compatíveis com sua operação.
               </p>
             </div>
 
             <div className="flex flex-col gap-3">
               <QuizInput
-                value={answers.nomeCompleto}
-                onChange={(v) => setAnswer("nomeCompleto", v)}
-                placeholder="Nome completo"
+                value={answers.nome}
+                onChange={(v) => setAnswer("nome", v)}
+                placeholder="Nome do responsável pelas compras"
               />
-              <QuizInput
-                value={answers.telefone}
-                onChange={(v) => setAnswer("telefone", v)}
-                placeholder="WhatsApp (00) 00000-0000"
-                mask="phone"
-              />
-              <QuizInput
-                value={answers.email}
-                onChange={(v) => setAnswer("email", v)}
-                placeholder="E-mail"
-              />
-              <QuizInput
-                value={answers.documento}
-                onChange={(v) => setAnswer("documento", v)}
-                placeholder="CNPJ"
-                mask="cnpj"
-              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select
+                  value={answers.cargo}
+                  onChange={(e) => setAnswer("cargo", e.target.value)}
+                  className="w-full p-4 rounded-lg border-2 border-border bg-card text-foreground font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                  <option value="" disabled>Cargo</option>
+                  <option value="Proprietário">Proprietário</option>
+                  <option value="Sócio">Sócio</option>
+                  <option value="Comprador">Comprador</option>
+                  <option value="Gerente">Gerente</option>
+                  <option value="Responsável pelo setor">Responsável pelo setor</option>
+                  <option value="Outro">Outro</option>
+                </select>
+                <QuizInput
+                  value={answers.whatsapp}
+                  onChange={(v) => setAnswer("whatsapp", v)}
+                  placeholder="WhatsApp (00) 00000-0000"
+                  mask="phone"
+                />
+              </div>
+
+              {answers.cargo === "Outro" && (
+                <QuizInput
+                  value={answers.cargoOutro}
+                  onChange={(v) => setAnswer("cargoOutro", v)}
+                  placeholder="Qual o seu cargo?"
+                />
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <QuizInput
+                  value={answers.cnpj}
+                  onChange={(v) => setAnswer("cnpj", v)}
+                  placeholder="CNPJ da empresa"
+                  mask="cnpj"
+                />
+                <QuizInput
+                  value={answers.nomeEmpresa}
+                  onChange={(v) => setAnswer("nomeEmpresa", v)}
+                  placeholder="Nome da loja ou razão social"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select
                   value={answers.estado}
@@ -791,10 +893,26 @@ const Quiz = () => {
                 <QuizInput
                   value={answers.cidade}
                   onChange={(v) => setAnswer("cidade", v)}
-                  placeholder="Cidade"
+                  placeholder="Cidade da empresa"
                 />
               </div>
+
+              <QuizInput
+                value={answers.email}
+                onChange={(v) => setAnswer("email", v)}
+                placeholder="E-mail comercial (opcional)"
+              />
             </div>
+
+            <label className="flex items-start gap-3 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={answers.consentimento}
+                onChange={(e) => setAnswer("consentimento", e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 rounded border-2 border-border accent-primary"
+              />
+              Autorizo a Gol Distribuidora a entrar em contato comigo por telefone ou WhatsApp para dar continuidade à minha solicitação comercial.
+            </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-primary text-center">
               <span className="rounded-lg bg-primary/10 px-3 py-2">Boleto a prazo</span>
@@ -803,106 +921,86 @@ const Quiz = () => {
             </div>
 
             <QuizButton
-              onClick={async () => {
-                if (isLoadingLead) {
-                  return;
-                }
-
-                setIsLoadingLead(true);
-                await sendWebhookLead(answers);
-                setWebhookSent(true);
-                try {
-                  fbq("track", "Lead");
-                } catch (_) {}
-                setIsLoadingLead(false);
-                next();
-              }}
+              onClick={submitForm}
               disabled={
-                !answers.nomeCompleto.trim() ||
-                answers.telefone.length < 14 ||
-                !validarCNPJ(answers.documento) ||
+                !answers.nome.trim() ||
+                !answers.cargo ||
+                answers.whatsapp.length < 14 ||
+                !validarCNPJ(answers.cnpj) ||
+                !answers.nomeEmpresa.trim() ||
                 !answers.estado ||
-                !answers.cidade.trim()
+                !answers.cidade.trim() ||
+                !answers.consentimento
               }
               variant="cta"
             >
-              {isLoadingLead ? "Cadastrando..." : "Cadastrar Agora"}
+              {isLoadingLead ? "Enviando..." : "Quero que um consultor monte meu pedido"}
             </QuizButton>
+            <p className="text-xs text-muted-foreground text-center -mt-2">
+              O envio não gera obrigação de compra. Preços, disponibilidade, crédito, prazo, frete e demais condições serão confirmados durante o atendimento.
+            </p>
           </div>
         );
 
-      case 10: {
-        const leadName = getLeadName();
-        const firstName = leadName.split(" ")[0] || displayName;
-        const insights = getDiagnosisInsights(answers, firstName);
+      case 16: {
+        const firstName = answers.nome.split(" ")[0] || "";
 
         return (
           <div className="flex flex-col gap-5 py-4">
-            {/* Cabeçalho */}
             <div className="text-center space-y-2">
               <div className="w-14 h-14 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto">
-                <Sparkles className="w-7 h-7 text-secondary" />
+                <CheckCircle2 className="w-7 h-7 text-secondary" />
               </div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Diagnóstico personalizado
-              </p>
               <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight">
-                {firstName}, identificamos{" "}
-                <span className="text-primary">
-                  {insights.length} oportunidade{insights.length !== 1 ? "s" : ""}
-                </span>{" "}
-                na sua loja
+                {firstName ? `${firstName}, sua` : "Sua"} solicitação foi recebida
               </h2>
+              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                As informações da sua empresa foram encaminhadas para a equipe comercial da Gol Distribuidora. Um consultor vai analisar suas respostas e entrar em contato pelo WhatsApp para:
+              </p>
             </div>
 
-            {/* Cards de insights */}
-            <div className="flex flex-col gap-3">
-              {insights.map((insight, i) => (
-                <div
-                  key={i}
-                  className={`p-4 rounded-xl border-l-4 bg-card ${
-                    insight.highlight ? "border-l-primary" : "border-l-secondary"
-                  }`}
-                >
-                  <p className="font-bold text-sm text-foreground flex items-center gap-2">
-                    <span>{insight.icon}</span>
-                    {insight.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {insight.text}
-                  </p>
-                </div>
+            <ul className="flex flex-col gap-2 max-w-sm mx-auto w-full">
+              {[
+                "Entender melhor sua necessidade",
+                "Apresentar as opções disponíveis",
+                "Recomendar um mix adequado à sua loja",
+                "Ajustar a sugestão de pedido com você",
+                "Explicar as condições comerciais aplicáveis",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  {item}
+                </li>
               ))}
+            </ul>
+
+            <div className="rounded-xl border border-border bg-card p-4 max-w-sm mx-auto w-full">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Para agilizar a conversa, tenha em mente
+              </p>
+              <ul className="flex flex-col gap-1 text-sm text-muted-foreground list-disc pl-4">
+                <li>Os produtos que seus clientes mais pedem</li>
+                <li>As marcas que já funcionam na loja</li>
+                <li>As numerações com maior saída</li>
+                <li>Os produtos que estão parados</li>
+                <li>O valor que pretende investir na próxima compra</li>
+              </ul>
             </div>
 
-            <div className="flex flex-col gap-3 pt-1">
-              <p className="text-sm text-muted-foreground text-center">
-                Veja produtos que você deveria parar de comprar, categorias que
-                podem dobrar seu giro e uma estimativa de ganho mensal com uma
-                sugestão personalizada.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-1">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-center">
-                Antes de falar com o consultor
-              </p>
-
-              <div className="w-full rounded-xl overflow-hidden border border-border aspect-video">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0`}
-                  title="Gol Distribuidora"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              </div>
+            <div className="w-full rounded-xl overflow-hidden border border-border aspect-video">
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0`}
+                title="Gol Distribuidora"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
             </div>
 
             <QuizButton onClick={redirectToSpecialist} variant="cta" disabled={isSubmittingLead}>
-              {isSubmittingLead ? "Abrindo WhatsApp..." : "Comprar Agora"}
+              {isSubmittingLead ? "Abrindo WhatsApp..." : "Falar com a Gol pelo WhatsApp"}
             </QuizButton>
           </div>
         );
@@ -920,7 +1018,7 @@ const Quiz = () => {
       {step > 1 && (
         <div className="w-full bg-white border-b border-border px-6 flex items-center justify-between relative shadow-sm" style={{ height: "72px" }}>
           <div className="w-[60px] flex justify-start">
-            {step > 1 && step < 8 && (
+            {step > 1 && step < 14 && (
               <button
                 onClick={prev}
                 className="text-primary text-sm font-medium"
@@ -939,7 +1037,7 @@ const Quiz = () => {
         </div>
       )}
 
-      {step >= 3 && step <= 8 && <BannerCarousel variant="strip" />}
+      {step >= 3 && step <= 14 && <BannerCarousel variant="strip" />}
 
       {step > 1 && step < TOTAL_STEPS && (
         <ProgressBar current={step - 1} total={TOTAL_STEPS - 1} />
