@@ -4,6 +4,7 @@ interface QuizInputProps {
   placeholder: string;
   type?: string;
   mask?: "phone" | "cnpj" | "none";
+  error?: string;
 }
 
 const applyPhoneMask = (value: string) => {
@@ -22,7 +23,7 @@ const applyCnpjMask = (value: string) => {
     .replace(/^(\d{2}\.\d{3}\.\d{3}\/\d{4})(\d)/, "$1-$2");
 };
 
-const QuizInput = ({ value, onChange, placeholder, type = "text", mask = "none" }: QuizInputProps) => {
+const QuizInput = ({ value, onChange, placeholder, type = "text", mask = "none", error }: QuizInputProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     if (mask === "phone") {
@@ -35,13 +36,20 @@ const QuizInput = ({ value, onChange, placeholder, type = "text", mask = "none" 
   };
 
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className="w-full p-4 rounded-lg border-2 border-border bg-card text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-    />
+    <div className="w-full">
+      <input
+        type={type}
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={`w-full p-4 rounded-lg border-2 bg-card text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all ${
+          error
+            ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+            : "border-border focus:border-primary focus:ring-primary/20"
+        }`}
+      />
+      {error && <p className="text-xs text-destructive mt-1 ml-1">{error}</p>}
+    </div>
   );
 };
 
