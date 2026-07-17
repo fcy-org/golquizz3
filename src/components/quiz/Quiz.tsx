@@ -1026,8 +1026,8 @@ const Quiz = () => {
         return (
           <div className="flex flex-col gap-5 py-4">
             <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-7 h-7 text-secondary" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
               </div>
               <h2 className="text-xl md:text-2xl font-extrabold text-foreground leading-tight">
                 {firstName ? `${firstName}, sua` : "Sua"} solicitação foi recebida
@@ -1037,25 +1037,25 @@ const Quiz = () => {
               </p>
             </div>
 
-            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 max-w-sm mx-auto w-full">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
-                Com base nas suas respostas
+            <div className="rounded-xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/70 p-4 max-w-sm mx-auto w-full shadow-md shadow-emerald-500/10">
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-2">
+                ✨ Com base nas suas respostas
               </p>
-              <p className="text-sm font-bold text-foreground mb-2">
+              <p className="text-base font-extrabold text-emerald-900 mb-2">
                 O mix ideal para a sua loja é:
               </p>
               <ul className="flex flex-col gap-2">
                 {mixIdeal.map((linha) => (
                   <li key={linha.id} className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span className="text-emerald-950">
                       <strong>{linha.nome}</strong>
-                      <span className="text-muted-foreground"> — {linha.marcas}</span>
+                      <span className="text-emerald-800/80"> — {linha.marcas}</span>
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-muted-foreground mt-3">
+              <p className="text-xs text-emerald-800/70 mt-3">
                 O consultor vai ajustar essa sugestão com você, considerando estoque, numeração e condições do momento.
               </p>
             </div>
