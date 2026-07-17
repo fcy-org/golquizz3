@@ -130,6 +130,82 @@ function formatoOperacaoFinal(answers: Answers): string {
   return answers.formatoOperacao;
 }
 
+type MixLinha = { id: string; nome: string; marcas: string };
+
+const MIX_LINHAS: MixLinha[] = [
+  { id: "feminina", nome: "Linha Feminina", marcas: "Vizzano, Beira Rio e Moleca" },
+  { id: "conforto", nome: "Linha Conforto", marcas: "Actvitta, Modare e Opanka" },
+  { id: "esportiva", nome: "Linha Esportiva", marcas: "BR Sport, Dalponte e Penalty" },
+  { id: "infantil", nome: "Linha Infantil", marcas: "Molekinha, Molekinho e Grendene" },
+  { id: "casual", nome: "Linha Casual de Giro Rápido", marcas: "Rider, Grendha, Azaleia e Cartago" },
+];
+
+function getMixIdeal(answers: Answers): MixLinha[] {
+  const score: Record<string, number> = {
+    feminina: 0,
+    conforto: 0,
+    esportiva: 0,
+    infantil: 0,
+    casual: 0,
+  };
+  const add = (id: string, points: number) => {
+    score[id] += points;
+  };
+  const addAll = (points: number) => {
+    MIX_LINHAS.forEach(({ id }) => add(id, points));
+  };
+
+  const publicoPontos: Record<string, [string, number][]> = {
+    Mulheres: [["feminina", 2]],
+    Homens: [["esportiva", 2], ["casual", 1]],
+    "Famílias": [["infantil", 1], ["casual", 1], ["feminina", 1]],
+    "Pais e responsáveis comprando para crianças": [["infantil", 2]],
+    "Adolescentes e jovens": [["esportiva", 1], ["feminina", 1]],
+    "Público que busca conforto e uso diário": [["conforto", 2]],
+    "Público que busca moda e novidades": [["feminina", 2]],
+  };
+  answers.publico.forEach((publico) => {
+    const pontos = publicoPontos[publico];
+    if (pontos) {
+      pontos.forEach(([id, points]) => add(id, points));
+    } else {
+      addAll(1);
+    }
+  });
+
+  const comportamentoPontos: Record<string, [string, number][]> = {
+    "Procuram principalmente opções confortáveis": [["conforto", 2]],
+    "Procuram novidades e modelos diferentes": [["feminina", 1], ["esportiva", 1]],
+    "Procuram produtos acessíveis para uso diário": [["casual", 2]],
+    "Perguntam por produtos infantis": [["infantil", 2]],
+  };
+  const comportamento = comportamentoPontos[answers.comportamentoConsumidor];
+  if (comportamento) {
+    comportamento.forEach(([id, points]) => add(id, points));
+  }
+
+  if (["Supermercado ou mercadinho", "Bazar ou loja de variedades"].includes(answers.formatoOperacao)) {
+    add("casual", 2);
+    add("infantil", 1);
+  }
+
+  const ranked = MIX_LINHAS.filter(({ id }) => score[id] > 0).sort(
+    (a, b) => score[b.id] - score[a.id]
+  );
+
+  if (ranked.length === 0) {
+    return MIX_LINHAS.filter(({ id }) => ["feminina", "conforto", "casual"].includes(id));
+  }
+
+  return ranked.slice(0, 3);
+}
+
+function mixIdealTexto(answers: Answers): string {
+  return getMixIdeal(answers)
+    .map((linha) => `${linha.nome} (${linha.marcas})`)
+    .join(" + ");
+}
+
 async function sendWebhookLead(answers: Answers) {
   const leadName = answers.nome || "Lead";
   const normalizedPhone = answers.whatsapp.replace(/\D/g, "");
@@ -162,6 +238,7 @@ async function sendWebhookLead(answers: Answers) {
           `Frequência de compra: ${answers.frequenciaCompra || "Não informado"}`,
           `Momento da próxima compra: ${answers.momentoCompra || "Não informado"}`,
           `Critério para escolher fornecedor: ${answers.criterioFornecedor || "Não informado"}`,
+          `Mix ideal sugerido: ${mixIdealTexto(answers)}`,
           answers.demandaEspecifica ? `Demanda específica: ${answers.demandaEspecifica}` : "",
           answers.cnpj ? `CNPJ: ${answers.cnpj}` : "",
           fbclid ? `Fbclid: ${fbclid}` : "",
@@ -332,7 +409,8 @@ const Quiz = () => {
         `Faixa de investimento: ${answers.faixaInvestimento}\n` +
         `Frequência de compra: ${answers.frequenciaCompra}\n` +
         `Momento da próxima compra: ${answers.momentoCompra}\n` +
-        `Critério para escolher fornecedor: ${answers.criterioFornecedor}` +
+        `Critério para escolher fornecedor: ${answers.criterioFornecedor}\n` +
+        `Mix ideal sugerido: ${mixIdealTexto(answers)}` +
         (answers.demandaEspecifica ? `\nDemanda específica: ${answers.demandaEspecifica}` : "")
     );
 
@@ -943,6 +1021,7 @@ const Quiz = () => {
 
       case 16: {
         const firstName = answers.nome.split(" ")[0] || "";
+        const mixIdeal = getMixIdeal(answers);
 
         return (
           <div className="flex flex-col gap-5 py-4">
@@ -955,6 +1034,29 @@ const Quiz = () => {
               </h2>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                 As informações da sua empresa foram encaminhadas para a equipe comercial da Gol Distribuidora. Um consultor vai analisar suas respostas e entrar em contato pelo WhatsApp para:
+              </p>
+            </div>
+
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 max-w-sm mx-auto w-full">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
+                Com base nas suas respostas
+              </p>
+              <p className="text-sm font-bold text-foreground mb-2">
+                O mix ideal para a sua loja é:
+              </p>
+              <ul className="flex flex-col gap-2">
+                {mixIdeal.map((linha) => (
+                  <li key={linha.id} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span className="text-foreground">
+                      <strong>{linha.nome}</strong>
+                      <span className="text-muted-foreground"> — {linha.marcas}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-3">
+                O consultor vai ajustar essa sugestão com você, considerando estoque, numeração e condições do momento.
               </p>
             </div>
 
